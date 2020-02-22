@@ -1,0 +1,351 @@
+{% extends "Testcases.html" %}
+{% block head %}
+    <title>TAFv2 DASHBOARD</title>
+    <style>
+			html{
+				width:100%;
+				height:100%;
+			}
+			body{
+				width:100%;
+				height:100%;
+				background-color:#DDD;
+				object-fit: cover;
+			}
+			div.dataTables_wrapper {
+     		   margin-bottom: 3em;
+    		}
+			tr.group:hover {
+				background-color: #ddd;
+			}
+            td.details-control {
+                background: url('http://next.datatables.net/examples/resources/details_open.png') no-repeat center center;
+                cursor: pointer;
+            }
+            tr.shown td.details-control {
+                background: url('http://next.datatables.net/examples/resources/details_close.png') no-repeat center center;
+            }
+            .required:before{
+              content:"*";
+              font-weight:bold;
+            }
+            .control-label:before{
+               color: red;
+               content: "*";
+               position: absolute;
+               margin-left: -10px;
+            }
+
+            td.data {font-size:9px}
+		</style>
+		<title>TAFv2 DASHBOARD</title>
+		<script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
+		<script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+  		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">
+  		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+{% endblock %}
+
+{% block body %}
+    <div class="row">
+        <div class="col-sm-6" style="background-color:white;">
+            <form action="#" method="post">
+                <button type="button" id="add_tc_id" class="btn btn-default btn-lg" onclick="flushData();" formmethod="post" style="float: right;" data-toggle="modal" data-target="#myModal">
+                    <span class="glyphicon glyphicon-plus-sign"></span> Add Test Case
+                </button>
+            </form>
+        </div>
+    </div>
+    </br></br>
+    <div>
+        <table id="table1" class="cell-border" style="width: fit-content" style="height: fit-content">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Summary</th>
+                    <th>Tags</th>
+                    <th>Steps</th>
+                    <th>Expected Results</th>
+                    <th>Author</th>
+                    <th>Last Updated By</th>
+                    <th>Added At</th>
+                    <th>Last Updated At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+
+    <!-- Modal -->
+          <div class="modal fade" id="myModal" role="dialog">
+              <div class="modal-dialog modal-lg">
+                  <form action="testcase" method="post" class="col-sm-11 control-label" id="testcases_form">
+                    <!-- Modal content-->
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <button type="button" class="close" data-dismiss="modal">&times;</button>
+                          <h4 class="modal-title">Test Case Addition</h4>
+                        </div>
+                          <div class="modal-body">
+                          <div class="form-group">
+                            <label class="col-sm-6 control-label">Author:</label>
+                            <div class="col-sm-5">
+                                <div class="form-group">
+                                  <input class="form-control" id="author_id" type="text" style="white-space: pre-wrap" disabled="disabled" value="{{ context.session.displayName }}">
+                                </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="modal-body">
+                          <div class="form-group">
+                            <label class="col-sm-6 control-label">Summary:</label>
+                            <div class="col-sm-5">
+                                <input class="form-control" id="summary_id" type="text" style="white-space: pre-wrap" required>
+                            </div>
+                          </div>
+                        </div>
+                          <div class="modal-body">
+                          <div class="form-group">
+                            <label class="col-sm-6 control-label">Steps:</label>
+                            <div class="col-sm-5">
+                                    <div class="form-group">
+                                      <textarea class="form-control" rows="5" id="steps_id" style="white-space: pre-wrap" required></textarea>
+                                    </div>
+                            </div>
+                              </br></br></br></br>
+                          </div>
+                        </div>
+                           <div class="modal-body">
+                          <div class="form-group">
+                            <label class="col-sm-6 control-label">Expected Results:</label>
+                            <div class="col-sm-5">
+                                <textarea class="form-control" rows="5" id="expected_results_id" style="white-space: pre-wrap" required></textarea>
+                            </div>
+                          </div>
+                               </br></br></br></br>
+                        </div>
+                           <div class="modal-body">
+                          <div class="form-group">
+                            <label class="col-sm-6">Tags:</label>
+                            <div class="col-sm-5">
+                                <input class="form-control" id="tags_id" type="text" style="white-space: pre-wrap">
+                            </div>
+                          </div>
+                        </div>
+                          </br></br>
+                        <div class="modal-footer">
+                            <input type="submit" id="submit_modal" value="SUBMIT" class="btn btn-default" onclick="f();" disabled="disabled"/>
+                            <button type="button" name="mod-submit" class="btn btn-default" data-dismiss="modal">Close</button>
+                        </div>
+                      </div>
+                </form>
+
+            </div>
+          </div>
+
+    <script>
+                $("input[type='text'], textarea").on("keyup", function(){
+                    if($(this).val() != "" && $("textarea#steps_id").val() != "" && $("textarea#expected_results_id").val() != ""){
+                        $("input[type='submit']").removeAttr("disabled");
+                    }
+                });
+
+            var from = null
+            var to = null
+            var _data = null
+
+            function flushData(){
+                $('#summary_id').val('')
+                $('#steps_id').val('')
+                $('#expected_results_id').val('')
+                $('#tags_id').val('')
+                $("input[type='submit']").attr("disabled", "disabled");
+
+
+            }
+
+            function editTestCase(data){
+                $('input[id=summary_id]').val(data.summary)
+                $("textarea#steps_id").val(data.steps)
+                $("textarea#expected_results_id").val(data.expectedResults)
+                $("input[id=tags_id]").val(data.tags)
+                $("input[type='submit']").attr("disabled", "disabled");
+                row_data = data
+            }
+
+            function f() {
+                if(from.id == "add_tc_id"){
+                        var author_id = $('#author_id').val();
+                        var tc_id = $('#summary_id').val();
+                        var tc_name = $('#steps_id').val()
+                        var tc_comment = $('#expected_results_id').val()
+                        var submission_time = new Date();
+                        var tag_name = $('#tags_id').val()
+                        data = {'tc_id': tc_id,'tc_name': tc_name, 'tc_comment': tc_comment, 'tc_author': author_id, 'tc_submission': submission_time, 'tag_name': tag_name}
+                        $.ajax({
+                            url: "api/testCases/add",
+                            type: 'POST', //or POST
+                            data: data
+                        });
+                        }
+                 else if(from.id == "tc_edit"){
+                        var author_id = $('#author_id').val();
+                        var tag_name = $('#tags_id').val()
+                        var summary = $('#summary_id').val();
+                        var tc_name = $('#steps_id').val()
+                        var tc_comment = $('#expected_results_id').val()
+                        var submission_time = new Date();
+                        var last_edited_submission_time = new Date();
+                        var last_edited_author = $('#author_id').val();
+                        data = {'tc_id': row_data.id,'tag_name': tag_name, 'summary': summary, 'tc_name': tc_name, 'tc_comment': tc_comment, 'tc_author': author_id, 'tc_submission': submission_time, 'last_edited_submission_time': last_edited_submission_time, 'last_edited_author': last_edited_author}
+                        $.ajax({
+                            url: "api/testCases/edit",
+                            type: 'PUT',
+                            data: data
+                        });
+
+                 }
+                };
+
+            $(document).ready(function() {
+                var table = $('#table1').DataTable({
+                    "processing": false,
+                    "order": [0, 'desc'],
+                    "stateSave": true,
+                    "ajax": {
+                        "url": "api/testCases/list",
+                        dataSrc: '',
+                    },
+                    "columnDefs" : [{
+                                        "targets": '_all',
+                                        "createdCell": function (td, cellData, rowData, row, col) {
+                                            $(td).css('padding', '5px')
+                                            $(td).css('white-space', 'pre-wrap')
+
+                                        }
+
+                                    },{
+                                        "targets": 0,
+                                        "data" : null,
+			                            "render": function ( data, type, row, meta ) {
+						                    return '<p style="color: black">'+data['id']+'</p>'
+    					                    }
+                                    },
+                                    {
+                                        "targets": 1,
+                                        "data" : null,
+			                            "render": function ( data, type, row, meta ) {
+						                    return '<p style="color: black">'+data['summary']+'</p>'
+    					                    }
+                                    },
+                                    {
+                                        "targets": 2,
+                                        "data" : null,
+			                            "render": function ( data, type, row, meta ) {
+			                                if(data.tags != null)
+						                        return '<p style="color: black">'+data['tags']+'</p>'
+						                    else
+						                        return '<p style="color: black">'+"-"+'</p>'
+    					                    }
+                                    },
+                                    {
+                                        "targets": 3,
+                                        "data" : null,
+			                            "render": function ( data, type, row, meta ) {
+						                    return '<p style="color: black">'+data['steps']+'</p>'
+    					                    }
+                                    },
+                                    {
+                                        "targets": 4,
+                                        "data" : null,
+			                            "render": function ( data, type, row, meta ) {
+						                    return '<p style="color: black">'+data['expectedResults']+'</p>'
+    					                    }
+                                    },
+                                    {
+                                        "targets": 5,
+                                        "data" : null,
+			                            "render": function ( data, type, row, meta ) {
+						                    return '<p style="color: black">'+data['owner']+'</p>'
+    					                    }
+                                    },
+                                    {
+                                        "targets": 6,
+                                        "data" : null,
+			                            "render": function ( data, type, row, meta ) {
+			                                if(data['lastEditedAuthor'] != null)
+						                        return '<p style="color: black">'+data['lastEditedAuthor']+'</p>'
+						                    else
+						                        return '<p style="color: black">'+"-"+'</p>'
+    					                    }
+                                    },
+                                    {
+                                        "targets": 7,
+                                        "data" : null,
+			                            "render": function ( data, type, row, meta ) {
+			                                if(data['submissionTime'] != null)
+						                        return '<p style="color: black">'+data['submissionTime'].split("GMT")[0]+'</p>'
+						                    else
+						                        return '<p style="color: black">'+"-"+'</p>'
+    					                    }
+                                    },
+                                    {
+                                        "targets": 8,
+                                        "data" : null,
+			                            "render": function ( data, type, row, meta ) {
+			                                    if(data['lastEditedSubmissionTime'] != null)
+						                            return '<p style="color: black">'+data['lastEditedSubmissionTime'].split("GMT")[0]+'</p>'
+						                        else
+						                            return '<p style="color: black">'+"-"+'</p>'
+    					                    }
+                                    },
+                                    {
+                                        "targets": -1,
+                                        "data" : null,
+			                            "render": function ( data, type, row, meta ) {
+
+						                    return '<button type="button" id="tc_edit" class="btn btn-default btn-sm" formmethod="post" data-toggle="modal" data-target="#myModal"> \
+                                                            <span class="glyphicon glyphicon-pencil"></span><b>Edit</b> \
+                                                    </button>&nbsp&nbsp' +
+                                                '<button type="submit" class="btn btn-default btn-sm"> \
+                                                    <span class="glyphicon glyphicon-minus"></span><b> Delete </b> \
+                                                </button>'
+    					                    }
+                                    }
+                                    /*{
+                                     "targets": 6,
+                                     "data" : null,
+                                    'render': function (data, type, row) {
+
+                                                    return '<button type="button" data-button="edit" onclick="editTestCase(data);" class="btn btn-default btn-sm" formmethod="post" data-toggle="modal" data-target="#myModal"> \
+                                                            <span class="glyphicon glyphicon-pencil"></span><b>Edit</b> \
+                                                    </button>&nbsp&nbsp' +
+                                                '<button type="submit" class="btn btn-default btn-sm"> \
+                                                    <span class="glyphicon glyphicon-minus"></span><b> Delete </b> \
+                                                </button>'
+                                                }
+                                    }*/
+                    ]
+                });
+                $('#table1 tbody').on( 'click', 'button', function () {
+                    var data = table.row( $(this).parents('tr') ).data();
+                    $('#tc_edit').click(editTestCase(data));
+
+                } );
+
+                $('#myModal').on('shown.bs.modal', function (e) {
+                    from = e.relatedTarget ? e.relatedTarget : e.fromElement;
+                    to = e.target ? e.target : e.toElement;
+
+                })
+
+                table.tables().header().to$().find('th:eq(1)').css('min-width', '180px');
+                table.tables().header().to$().find('th:eq(3)').css('min-width', '340px');
+                //table.tables().header().to$().find('th:eq(4)').css('min-width', '340px');
+                table.tables().header().to$().find('th:eq(-1)').css('min-width', '140px');
+                $(window).trigger('resize');
+            });
+
+    </script>
+{% endblock %}

@@ -1,0 +1,328 @@
+{% extends "Testcases.html" %}
+{% block head %}
+    <style>
+			html{
+				width:100%;
+				height:100%;
+			}
+			body{
+				width:100%;
+				height:100%;
+				background-color:#DDD;
+				object-fit: cover;
+			}
+			div.dataTables_wrapper {
+     		   margin-bottom: 3em;
+    		}
+			tr.group:hover {
+				background-color: #ddd;
+			}
+            td.details-control {
+                background: url('http://next.datatables.net/examples/resources/details_open.png') no-repeat center center;
+                cursor: pointer;
+            }
+            tr.shown td.details-control {
+                background: url('http://next.datatables.net/examples/resources/details_close.png') no-repeat center center;
+            }
+
+            td.data {font-size:9px}
+		</style>
+		<title>TAFv2 DASHBOARD</title>
+		<script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
+		<script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+  		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">
+  		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+{% endblock %}
+
+{% block body %}
+		<table id="table1" class="cell-border" style="width: fit-content" style="height: fit-content">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>ID</th>
+                    <th>Execution</th>
+                    <th>TaskGroup</th>
+                    <th>Start Time</th>
+                    <th>Duration</th>
+                    <th>Tasks Passed</th>
+                    <th>Tasks Failed</th>
+                    <th>Tasks Aborted</th>
+                    <th>Tasks Unknown</th>
+                    <th>Tasks Timed-out</th>
+                    <th>Total Tasks</th>
+                </tr>
+            </thead>
+        </table>
+	<script>
+        function format ( d ) {
+            var tab = '';
+            var obj = null
+            tasks_info = d.tasks;
+            for(var i=0; i<tasks_info.length; i++){
+                var obj = tasks_info[i];
+                var task_log = "http://192.168.33.105/tafv2/logs/"+d.executionName+"/"+obj.taskName;
+                var task_log_loc = '<a target="new" href="'+task_log+'">'+obj.displayName+'</a>'
+                var status = '';
+                var owner_name = '<a href="mailto:'+obj.ownerMailID+'">'+obj.ownerName+'</a>';
+                var execution_time = duration(obj['startTime'], obj['endTime'])
+
+                if (execution_time == null)
+                    execution_time = "in progress..."
+
+                if (obj.result == null)
+                        status = '<p style="color: black">'+'-'+'</p>'
+
+                else if(obj.result.toLowerCase() == 'pass')
+                    status = '<p style="color: green">'+obj.result+'</p>'
+
+                else if (obj.result.toLowerCase() == 'fail')
+                        status = '<p style="color: red">'+obj.result+'</p>'
+
+                else if (obj.result.toLowerCase() == 'abort')
+                        status = '<p style="color: orange">'+obj.result+'</p>'
+
+                else if (obj.result.toLowerCase() == 'unknown')
+                        status = '<p style="color: magenta">'+obj.result+'</p>'
+
+                else if (obj.result.toLowerCase() == 'timeout')
+                        status = '<p style="color: grey">'+obj.result+'</p>'
+
+
+                var tab = tab + '<tr>' +
+                    '<td>' + i +'</td>' +
+                    '<td>' + task_log_loc + '</td>' +
+                    '<td>' + status + '</td>' +
+                    '<td>' + owner_name + '</td>' +
+                    '<td>' + execution_time + '</td>' +
+                '</tr>'
+            }
+
+    return '<table id="table2" class="cell-border" style="width:90%" align="center" >' +
+     	'<thead>' +
+            '<tr>' +
+				'<th>Sr. No</th>' +
+                '<th>Task Name</th>' +
+                '<th>Result</th>' +
+                '<th>Owner</th>' +
+                '<th>Execution Time</th>' +
+            '</tr>' +
+        '</thead>' +
+            '<tbody>' +
+            tab +
+            '</tbody>' +
+    '</table>';
+}
+		function duration(start_time, end_time){
+		    try {
+                start_time = modifyDateTime(start_time)
+                end_time = modifyDateTime(end_time)
+
+                start_hh = parseInt(start_time.split('</br>', -1)[1].split('Hrs', -1)[0])
+                start_mm = parseInt(start_time.split('</br>', -1)[1].split('Min', -1)[0].split(" ")[1])
+                start_ss = parseInt(start_time.split('</br>', -1)[1].split('sec', -1)[0].split(' ')[2])
+
+                start_total = start_hh * 60 * 60 + start_mm * 60 + start_ss
+
+                end_hh = parseInt(end_time.split('</br>', -1)[1].split('Hrs', -1)[0])
+                end_mm = parseInt(end_time.split('</br>', -1)[1].split('Min', -1)[0].split(" ")[1])
+                end_ss = parseInt(end_time.split('</br>', -1)[1].split('sec', -1)[0].split(' ')[2])
+
+                end_total = end_hh * 60 * 60 + end_mm * 60 + end_ss
+
+                total = end_total - start_total
+                console.log(start_time, end_time)
+				console.log(start_total, end_total)
+				console.log(total)
+
+                hh = Math.floor(total/3600)
+				rem = Math.floor(total%3600)
+                mm = Math.floor(rem/60)
+				rem = Math.floor(rem%60)
+                ss = rem
+				if(hh != 0 && mm != 0 && ss != 0)
+                	return hh + "Hrs " + mm + "Min " + ss + "sec"
+				else {
+                    if (hh == 0)
+                        if (mm == 0)
+                            if (ss == 0)
+                                return ss + "sec"
+                            else
+                                return ss + "sec"
+                    	if (mm != 0)
+                        	if (ss == 0)
+                            	return mm + "Min"
+                        	else
+                            	return mm + "Min " + ss + "sec"
+					else
+					    return hh + "Hrs " + mm + "Min " + ss + "sec"
+                }
+            }catch (e) {
+
+            }
+
+		}
+		function modifyDateTime(datetimestr){
+		    if(datetimestr != null) {
+                date = datetimestr.split('T')[0]
+				day = date.split('-',3)
+				day_month_year = day[2]+'-'+convertToMonth(day[1])+'-'+day[0];
+                time = datetimestr.split('T')[1].split('.')[0]
+				time = time.split(':', 3)
+				hh_mm_ss = time[0]+"Hrs "+time[1]+"Min "+time[2]+"sec"
+                return day_month_year +"</br>" + hh_mm_ss
+            }
+            else{
+                return "-";
+                }
+		}
+		function convertToMonth(day){
+		    switch (parseInt(day)) {
+				case 1:
+				    return "Jan";
+				case 2:
+				    return "Feb";
+				case 3:
+				    return "Mar";
+				case 4:
+				    return "Apr";
+				case 5:
+				    return "May";
+				case 6:
+				    return "Jun";
+				case 7:
+				    return "Jul";
+				case 8:
+				    return "Aug";
+				case 9:
+				    return "Sep";
+				case  10:
+				    return "Oct";
+				case 11:
+				    return "Nov";
+				case  12:
+				    return "Dec";
+            }
+		}
+
+			$(document).ready(function() {
+    var table = $('#table1').DataTable({
+        "processing" : false,
+		"order": [0, 'desc'],
+        "ajax" : {
+            "url" : "/api/execution/getInfo",
+            dataSrc : ''
+        },
+		"deferLoading": 20,
+        "columnDefs" : [{
+                "targets": '_all',
+                "createdCell": function (td, cellData, rowData, row, col) {
+                    $(td).css('padding', '5px')}
+                },
+            {
+                "targets": 0,
+                "className":      'details-control',
+                "orderable":      false,
+                "data":           null,
+                "defaultContent": ''
+            },{
+            "targets": 1,
+            "data" : null,
+			"render": function ( data, type, row, meta ) {
+						return '<p style="color: black">'+data['executionId']+'</p>'
+    					}
+        },{
+            "targets": 2,
+            "data" : null,
+			"render": function ( data, type, row, meta ) {
+                		var log_location = "http://192.168.33.105/tafv2/logs/"+data['executionName'];
+                		if(data['aliasName'] != null)
+							return '<a target="new" href="'+log_location+'">'+data['aliasName']+'<abbr title="'+log_location+'"></abbr></a>'
+						else
+						    return "-"
+    					}
+        }, {
+            "targets": 3,
+            "data" : null,
+			"render": function ( data, type, row, meta ) {
+						return '<p style="color: black">'+data['taskGroupName']+'</p>'
+    					}
+        }, {
+            "targets": 4,
+            "data" : null,
+			"render": function ( data, type, row, meta ) {
+                		start_time = modifyDateTime(data['startTime'])
+						return start_time
+    					},
+			"order": 'asc'
+        }, {
+            "targets": 5,
+            "data" : null,
+			"render": function ( data, type, row, meta ) {
+                		if(data['endTime'] == null)
+                		    return "-"
+						else
+							return duration(data['startTime'], data['endTime'])
+    					}
+        },{
+            "targets": 6,
+            "data" : null,
+			"render": function ( data, type, row, meta ) {
+						return '<p style="color: green">'+data['taskResults']['pass']+'</p>'
+    					}
+        }, {
+            "targets": 7,
+            "data" : null,
+			"render": function ( data, type, row, meta ) {
+						return '<p style="color: red">'+data['taskResults']['fail']+'</p>'
+    					}
+		},{
+            "targets": 8,
+            "data" : null,
+			"render": function ( data, type, row, meta ) {
+						return '<p style="color: orange">'+data['taskResults']['abort']+'</p>'
+    					}
+		},{
+            "targets": 9,
+            "data" : null,
+			"render": function ( data, type, row, meta ) {
+						return '<p style="color: magenta">'+data['taskResults']['unknown']+'</p>'
+    					}
+		},{
+            "targets": 10,
+            "data" : null,
+			"render": function ( data, type, row, meta ) {
+						return '<p style="color: grey">'+data['taskResults']['timedout']+'</p>'
+    					}
+		},{
+            "targets": 11,
+            "data" : null,
+			"render": function ( data, type, row, meta ) {
+						return  data['taskResults']['total']
+    					}
+        }
+        ]
+    });
+
+    $('#table1 tbody').on('click', 'td.details-control', function () {
+        var tr = $(this).closest('tr');
+        var row = table.row( tr );
+
+        if ( row.child.isShown() ) {
+            // This row is already open - close it
+            row.child.hide();
+            tr.removeClass('shown');
+        }
+        else {
+            // Open this row
+            row.child( format(row.data()) ).show();
+            tr.addClass('shown');
+        }
+    } );
+    table.tables().header().to$().find('th:eq(4)').css('min-width', '180px');
+    $(window).trigger('resize');
+
+});
+	</script>
+{% endblock %}
